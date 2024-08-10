@@ -1,26 +1,18 @@
 package org.example;
 
-import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
-import io.restassured.path.json.JsonPath;
 import io.restassured.response.Response;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import java.util.List;
 import java.util.Arrays;
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.notNullValue;
 
 @RunWith(Parameterized.class)
 public class OrderTest {
     static final String URL = "https://qa-scooter.praktikum-services.ru";
-    static final String API_CREATE_ORDER = "/api/v1/orders";
-    static final String API_CHECK_TRACK = "/api/v1/orders/track?t=";
     private final String firstName;
     private final String lastName;
     private final String address;
@@ -61,58 +53,18 @@ public class OrderTest {
     @Test
     @DisplayName("Create order with two colors, one color, no color selected and check Status and Track assigned and check order by Track")
     public void testCreateOrderAndCheckStatusAndTrack() {
-        Response order = createOrder();
-        int track = checkStatusCode(order, 201);
-        showOrder(track);
+        OrderTestStep createOrder = new OrderTestStep();
+        OrderTestStep checkStatusCode = new OrderTestStep();
+        OrderTestStep showOrder = new OrderTestStep();
+        Response order = createOrder.createOrder(firstName, lastName, address, metroStation, phone, rentTime, deliveryDate, comment, color);
+        int track = checkStatusCode.checkStatusCode(order, 201);
+        showOrder.showOrder(track);
     }
 
     @Test
     @DisplayName("Show orders")
     public void testShowOrders() {
-        showOrders();
-    }
-
-    @Step("Create order")
-    public Response createOrder() {
-        Order order = new Order(firstName, lastName, address, metroStation, phone, rentTime, deliveryDate, comment, color);
-        return given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(order)
-                .when()
-                .post(API_CREATE_ORDER);
-    }
-
-    @Step("Check status code and track")
-    public int checkStatusCode(Response response, int status_code) {
-        response.then().statusCode(status_code);
-        JsonPath body = response.jsonPath();
-        int track = body.get("track");
-        Assert.assertNotEquals(track, 0);
-        return track;
-    }
-
-    @Step("Show order by track")
-    public void showOrder(int track) {
-        Response response = given()
-                .header("Content-type", "application/json")
-                .when()
-                .get(API_CHECK_TRACK + track);
-        response.then().assertThat().body("order.track", equalTo(track))
-                .and()
-                .statusCode(200);
-    }
-
-    @Step("Show orders")
-    public void showOrders() {
-        Response response = given()
-                .header("Content-type", "application/json")
-                .when()
-                .get(API_CREATE_ORDER + "?nearestStation=[\"26\"]");
-        response.then().assertThat().body("orders.id", notNullValue())
-                .and()
-                .assertThat().body("orders.track", notNullValue())
-                .and()
-                .statusCode(200);
+        OrderTestStep showOrders = new OrderTestStep();
+        showOrders.showOrders();
     }
 }
